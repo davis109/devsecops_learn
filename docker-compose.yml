@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  # CVE Sentinel MCP Server - The Eyes
+  cve-sentinel:
+    build:
+      context: .
+      dockerfile: servers/cve-sentinel/Dockerfile
+    container_name: helios-cve-sentinel
+    ports:
+      - "8001:8001"
+    environment:
+      - NVD_API_KEY=${NVD_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - LOG_LEVEL=${HELIOS_LOG_LEVEL:-INFO}
+    volumes:
+      - ./data/cve-cache:/app/cache
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - helios-network
+
+  # Repo Scout MCP Server - The Navigator
+  repo-scout:
+    build:
+      context: .
+      dockerfile: servers/repo-scout/Dockerfile
+    container_name: helios-repo-scout
+    ports:
+      - "8002:8002"
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_ORG=${GITHUB_ORG}
+      - LOG_LEVEL=${HELIOS_LOG_LEVEL:-INFO}
+    volumes:
+      - ./data/repo-cache:/app/cache
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - helios-network
+
+  # Sandbox Executor MCP Server - The Hands
+  sandbox-executor:
+    build:
+      context: .
+      dockerfile: servers/sandbox-executor/Dockerfile
+    container_name: helios-sandbox-executor
+    ports:
+      - "8003:8003"
+    environment:
+      - SANDBOX_TIMEOUT=${SANDBOX_TIMEOUT:-600}
+      - SANDBOX_MAX_CONTAINERS=${SANDBOX_MAX_CONTAINERS:-5}
+      - LOG_LEVEL=${HELIOS_LOG_LEVEL:-INFO}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/sandbox-cache:/app/cache
+      - ./logs:/app/logs
+    privileged: true
+    restart: unless-stopped
+    networks:
+      - helios-network
+
+  # Git Committer MCP Server - The Mouthpiece
+  git-committer:
+    build:
+      context: .
+      dockerfile: servers/git-committer/Dockerfile
+    container_name: helios-git-committer
+    ports:
+      - "8004:8004"
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - LOG_LEVEL=${HELIOS_LOG_LEVEL:-INFO}
+    volumes:
+      - ./data/git-cache:/app/cache
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - helios-network
+
+  # PostgreSQL for agent state tracking
+  postgres:
+    image: postgres:16-alpine
+    container_name: helios-postgres
+    environment:
+      - POSTGRES_DB=helios
+      - POSTGRES_USER=helios
+      - POSTGRES_PASSWORD=helios_dev_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - helios-network
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: helios-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+    networks:
+      - helios-network
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: helios-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - helios-network
+
+volumes:
+  postgres-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  helios-network:
+    driver: bridge
