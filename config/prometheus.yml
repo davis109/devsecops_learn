@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'cve-sentinel'
+    static_configs:
+      - targets: ['cve-sentinel:8001']
+  
+  - job_name: 'repo-scout'
+    static_configs:
+      - targets: ['repo-scout:8002']
+  
+  - job_name: 'sandbox-executor'
+    static_configs:
+      - targets: ['sandbox-executor:8003']
+  
+  - job_name: 'git-committer'
+    static_configs:
+      - targets: ['git-committer:8004']
