@@ -1,0 +1,40 @@
+# Core dependencies
+anthropic>=0.40.0
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+python-dotenv>=1.0.0
+
+# Web framework for MCP servers
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+
+# HTTP clients
+httpx>=0.27.0
+requests>=2.32.0
+
+# GitHub API
+PyGithub>=2.5.0
+gitpython>=3.1.43
+
+# Database
+sqlalchemy>=2.0.35
+alembic>=1.13.3
+
+# Docker SDK
+docker>=7.1.0
+
+# Monitoring and logging
+prometheus-client>=0.21.0
+structlog>=24.4.0
+python-json-logger>=3.2.0
+
+# Security
+cryptography>=44.0.0
+
+# Task scheduling
+apscheduler>=3.10.4
+
+# Utilities
+tenacity>=9.0.0
+click>=8.1.7
+rich>=13.9.4
